@@ -18,3 +18,7 @@ class ForwardModel:
 
     def predict(self, data):
         return self._model.predict(data)
+    
+    @property
+    def feature_importances(self):
+        return self._model.feature_importances_
