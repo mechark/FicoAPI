@@ -1,0 +1,6 @@
+.venv
+.pytohn-version
+.vscode
+pyproject.toml
+README.md
+uv.lock
