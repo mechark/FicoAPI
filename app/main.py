@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.routers import predict, health, recommend
 from fastapi.middleware.cors import CORSMiddleware
-  
+
 app = FastAPI()
 
 app.include_router(predict.router)
@@ -15,6 +15,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 async def root():
