@@ -1,34 +1,11 @@
 from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import Dict, Any
 
-# class UserData(BaseModel):
-#     creditLimit: float = Field(..., ge=0)
-#     usedCredit: float = Field(..., ge=0)
-#     cardBalance: float = Field(..., ge=0)
-#     availableCredit: float = Field(..., ge=0)
-#     accounts75: float = Field(..., ge=0)
-#     totalAccounts: float = Field(..., ge=0)
-#     delayedPayments: float = Field(..., ge=0)
-#     totalCredits: float = Field(..., ge=0)
-#     delayed120: float = Field(..., ge=0)
-#     bankruptcies: float = Field(..., ge=0)
-#     derogatory: float = Field(..., ge=0)
-#     nonExhausted: float = Field(..., ge=0)
-#     delayed30: float = Field(..., ge=0)
-#     firstCreditMonths: float = Field(..., ge=0)
-#     credits2Years: float = Field(..., ge=0)
-#     own: bool = Field(...)
-#     mortgage: bool = Field(...)
-#     rent: bool = Field(...)
-#     family: bool = Field(...)
-#     dormitory: bool = Field(...)
-
-
 class UserData(BaseModel):
     total_credit_limit: float = Field(..., ge=0)
     used_credit_amount: float = Field(..., ge=0)
     available_credit_limit: float = Field(..., ge=0)
-    accounts_without_late_payments: int = Field(..., ge=0)
+    accounts_with_late_payments: int = Field(..., ge=0)
     total_accounts: int = Field(..., ge=1)
     number_of_derogatory_records: int = Field(..., ge=0)
     number_of_collections: int = Field(..., ge=0)
@@ -70,7 +47,8 @@ class InputFeatures(UserData):
     @computed_field
     @property
     def pct_tl_nvr_dlq(self) -> int:
-        return int(self.accounts_without_late_payments / self.total_accounts) * 100
+        accounts_without_late_payments = self.total_accounts - self.accounts_with_late_payments
+        return int(accounts_without_late_payments / self.total_accounts) * 100
 
     @computed_field
     @property

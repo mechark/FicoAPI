@@ -42,7 +42,7 @@ class FeatureRecommender:
             "pct_tl_nvr_dlq": FeatureConfig(
                 (93.92, 100.0), "Відсоток рахунків без прострочень"
             ),
-            "accounts_without_late_payments": FeatureConfig(
+            "accounts_with_late_payments": FeatureConfig(
                 (total_accounts, 50.0),
                 "Кількість рахунків на яких коли небудь було протерміновано виплату",
             ),
