@@ -16,6 +16,11 @@ router = APIRouter(prefix="/predict", tags=["Fico prediction"])
 def predict_xgb_boost(data: Annotated[user.UserData, Body()]):
     # Get the input model
     input_model = user.InputFeatures(**data.model_dump())
+
+    if any(input_model.model_dump().values()):
+        input_model.home_ownership_ANY = True
+        data.home_ownership_ANY = True
+
     model_input = list(input_model.model_dump().values())
 
     # Get the prediction
@@ -23,9 +28,7 @@ def predict_xgb_boost(data: Annotated[user.UserData, Body()]):
     prediction = boost.predict([model_input])
 
     # Get the recommendations
-    recommender = FeatureRecommender(
-        data.model_dump().keys(), input_model.total_accounts
-    )
+    recommender = FeatureRecommender(data.model_dump().keys())
     recommendations = recommender.analyze_features(data.model_dump())
 
     return ResponseWithRecommendation(

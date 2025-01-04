@@ -2,7 +2,6 @@ from typing import Annotated
 from fastapi import APIRouter, Body
 from app.schemas.user import UserData
 from app.services.feature_importance import FeatureRecommender
-from app.models.boost_model import ForwardModel
 
 router = APIRouter(
     prefix="/recommend", tags=["Recomendations on how to imporve your Fico score"]

@@ -91,6 +91,11 @@ class InputFeatures(UserData):
     @property
     def avg_cur_bal(self) -> int:
         return int(self.total_card_balance / self.total_accounts)
+    
+    @computed_field
+    @property
+    def dti(self) -> int:
+        return int(self.monthly_debt_payments / self.total_income if self.total_income != 0 else 1e-6 * 100)
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -116,7 +121,7 @@ class InputFeatures(UserData):
             "credits_taken_last_2_years",
             "total_il_high_credit_limit",
             "bc_util",
-            "monthly_debt_payments",
+            "dti",
             "avg_cur_bal",
             "total_income",
             "credits_overdue_30_days",
