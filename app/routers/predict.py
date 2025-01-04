@@ -18,7 +18,6 @@ def predict_xgb_boost(data: Annotated[user.UserData, Body()]):
     input_model = user.InputFeatures(**data.model_dump())
     model_input = list(input_model.model_dump().values())
 
-    print("Input model", input_model)
     # Get the prediction
     boost = ForwardModel()
     prediction = boost.predict([model_input])

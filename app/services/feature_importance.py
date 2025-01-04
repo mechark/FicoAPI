@@ -1,21 +1,17 @@
-from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Optional
 
 from app.models.boost_model import ForwardModel
-from app.schemas.response import Recommendation
-
-
-@dataclass
-class FeatureConfig:
-    """Configuration for a feature including its threshold and Ukrainian translation."""
-
-    threshold: Tuple[float, float]
-    ukrainian_name: str
-    is_negative: bool = False
-
+from app.schemas.response import NotNeedImprovement, Recommendation
+from app.schemas.feature_config import FeatureConfig, FeatureStatus
 
 class FeatureRecommender:
     """Analyzes user features and provides recommendations for credit approval."""
+
+    _special_features = {
+        "home_ownership_ANY": "Наявність власного житла",
+        "home_ownership_MORTGAGE": "Іпотечний кредит",
+        "home_ownership_OWN": "Власне житло",
+    }
 
     def __init__(self, feature_names: List[str], total_accounts: int):
         self.model = ForwardModel()
@@ -27,75 +23,117 @@ class FeatureRecommender:
         self.feature_configs: Dict[str, FeatureConfig] = {
             # Credit-related features
             "total_credit_limit": FeatureConfig(
-                (178242.73, 9999999.0), "Загальний кредитний ліміт"
+                threshold=(178242.73, 9999999.0), 
+                ukrainian_name="Загальний кредитний ліміт",
+                explanation="Більший кредитний ліміт показує довіру банків та вашу платоспроможність"
             ),
             "available_credit_limit": FeatureConfig(
-                (178242.73, 9999999.0), "Доступний кредитний ліміт"
+                threshold=(178242.73, 9999999.0), 
+                ukrainian_name="Доступний кредитний ліміт",
+                explanation="Наявність вільного кредитного ліміту свідчить про розумне використання кредитів"
             ),
             "used_credit_amount": FeatureConfig(
-                (49.91, 892.0), "Використана кредитна сума", is_negative=True
+                threshold=(49.91, 892.0), 
+                ukrainian_name="Використана кредитна сума", 
+                status=FeatureStatus(is_negative=True, can_improve=False),
+                explanation="Висока використана сума кредиту може вказувати на фінансові труднощі"
             ),
             "total_card_balance": FeatureConfig(
-                (0.0, 9999999.0), "Загальний баланс на картках", is_negative=True
+                threshold=(0.0, 9999999.0), 
+                ukrainian_name="Загальний баланс на картках", 
+                status=FeatureStatus(is_negative=True, can_improve=True),
+                explanation="Великий баланс на картках збільшує ризик неповернення коштів"
             ),
             # Account health metrics
             "pct_tl_nvr_dlq": FeatureConfig(
-                (93.92, 100.0), "Відсоток рахунків без прострочень"
+                threshold=(93.92, 100.0), 
+                ukrainian_name="Відсоток рахунків без прострочень",
+                explanation="Високий відсоток вчасних платежів покращує кредитний рейтинг"
             ),
             "accounts_with_late_payments": FeatureConfig(
-                (total_accounts, 50.0),
-                "Кількість рахунків на яких коли небудь було протерміновано виплату",
+                threshold=(0, 50.0),
+                ukrainian_name="Кількість рахунків на яких коли небудь було протерміновано виплату",
+                explanation="Прострочені платежі негативно впливають на кредитну історію",
+                status=FeatureStatus(is_negative=True, can_improve=False),
             ),
             "accounts_with_75_percent_limit": FeatureConfig(
-                (42.30, 100.0),
-                "Кількість рахунків, де доступно > 75% кредитного ліміту",
-                is_negative=True,
+                threshold=(42.30, 100.0),
+                ukrainian_name="Кількість рахунків, де доступно > 75% кредитного ліміту",
+                status=FeatureStatus(is_negative=True, can_improve=True),
+                explanation="Високе використання ліміту може вказувати на фінансові труднощі"
             ),
             # Negative indicators
             "number_of_derogatory_records": FeatureConfig(
-                (0.20, 86.0),
-                "Кількість принизливих публічних записів",
-                is_negative=True,
+                threshold=(0.20, 86.0),
+                ukrainian_name="Кількість принизливих публічних записів",
+                status=FeatureStatus(is_negative=True, can_improve=False),
+                explanation="Негативні записи значно знижують кредитний рейтинг"
             ),
             "number_of_collections": FeatureConfig(
-                (232.71, 9152545.0),
-                "Кількість заборгованостей переданих колекторам",
-                is_negative=True,
+                threshold=(232.71, 9152545.0),
+                ukrainian_name="Кількість заборгованостей переданих колекторам",
+                status=FeatureStatus(is_negative=True, can_improve=False),
+                explanation="Передача боргів колекторам серйозно погіршує кредитну історію"
             ),
             "credits_overdue_120_days": FeatureConfig(
-                (0.48, 58.0),
-                "Кількість прострочених кредитів на 120 днів і більше",
-                is_negative=True,
+                threshold=(0.48, 58.0),
+                ukrainian_name="Кількість прострочених кредитів на 120 днів і більше",
+                status=FeatureStatus(is_negative=True, can_improve=False),
+                explanation="Тривалі прострочення серйозно впливають на кредитний рейтинг"
             ),
             "credits_overdue_30_days": FeatureConfig(
-                (0.31, 58.0),
-                "Кількість прострочених кредитів на 30 днів і більше",
-                is_negative=True,
+                threshold=(0.31, 58.0),
+                ukrainian_name="Кількість прострочених кредитів на 30 днів і більше",
+                status=FeatureStatus(is_negative=True, can_improve=False),
+                explanation="Навіть короткі прострочення негативно впливають на рейтинг"
             ),
             # Financial metrics
             "total_il_high_credit_limit": FeatureConfig(
-                (43732.01, 2118996.0), "Загальний ліміт по інстальментних кредитах"
+                threshold=(43732.01, 2118996.0), 
+                ukrainian_name="Загальний ліміт по інстальментних кредитах",
+                explanation="Високий ліміт по інстальментних кредитах показує довіру банків"
             ),
-            "bc_util": FeatureConfig((57.46, 339.0), "Використання кредитних карт"),
+            "bc_util": FeatureConfig(
+                threshold=(57.46, 339.0), 
+                ukrainian_name="Використання кредитних карт",
+                explanation="Помірне використання кредитних карт вказує на фінансову дисципліну"
+            ),
             "monthly_debt_payments": FeatureConfig(
-                (18.33, 999.0), "Щомісячні виплати боргу", is_negative=True
+                threshold=(18.33, 999.0), 
+                ukrainian_name="Щомісячні виплати боргу", 
+                explanation="Високі щомісячні виплати зменшують ризик неповернення"
             ),
             "avg_cur_bal": FeatureConfig(
-                (13547.77, 958084.0), "Середній поточний баланс"
+                threshold=(13547.77, 958084.0), 
+                ukrainian_name="Середній поточний баланс",
+                explanation="Стабільний середній баланс показує фінансову стійкість"
             ),
-            "total_income": FeatureConfig((77992.42, 110000000.0), "Сумарний дохід"),
+            "total_income": FeatureConfig(
+                threshold=(77992.42, 110000000.0), 
+                ukrainian_name="Сумарний дохід",
+                explanation="Вищий дохід покращує співвідношення боргу до доходу"
+            ),
             # Other metrics
             "mo_sin_rcnt_rev_tl_op": FeatureConfig(
-                (14.02, 547.0), "Місяців з останнього відкриття револьверного рахунку"
+                threshold=(14.02, 547.0), 
+                ukrainian_name="Місяців з останнього відкриття револьверного рахунку",
+                explanation="Довший період без нових рахунків показує фінансову стабільність"
             ),
             "num_actv_rev_tl": FeatureConfig(
-                (5.61, 72.0), "Кількість активних револьверних рахунків"
+                threshold=(5.61, 72.0), 
+                ukrainian_name="Кількість активних револьверних рахунків",
+                explanation="Помірна кількість активних рахунків показує досвід користування кредитами"
             ),
             "mo_sin_old_il_acct": FeatureConfig(
-                (125.69, 999.0),
-                "Місяців з відкриття найстарішого інстальментного рахунку",
+                threshold=(125.69, 999.0),
+                ukrainian_name="Місяців з відкриття найстарішого інстальментного рахунку",
+                explanation="Довша кредитна історія підвищує довіру кредиторів"
             ),
-            "home_ownership_ANY": FeatureConfig((1.0, 1.0), "Власність на житло"),
+            "home_ownership_ANY": FeatureConfig(
+                threshold=(1.0, 1.0), 
+                ukrainian_name="Власність на житло",
+                explanation="Наявність власного житла позитивно впливає на кредитний рейтинг"
+            ),
         }
 
     def _calculate_impact(
@@ -120,22 +158,28 @@ class FeatureRecommender:
         """Create a recommendation if the feature needs improvement."""
         needs_improvement = (
             (current_value > good_threshold)
-            if config.is_negative
+            if config.status.is_negative
             else (current_value < good_threshold)
         )
 
         if not needs_improvement:
             return None
 
-        action = "Зменщіть" if config.is_negative else "Збільщіть"
-        message = f"{action} '{config.ukrainian_name}'. Людям з такими показниками частіше одобрюють видачу кредиту."
+        if not config.status.can_improve:
+            message = "На жаль, цей показник вже не вдасться покращити. " + config.explanation
+        else:
+            if feat_name in self._special_features:
+                message = f"{config.explanation}"
+            else:
+                action = "знизити" if config.status.is_negative else "підвищити"
+                message = f"Радимо {action} цей показник. {config.explanation}"
 
         impact = self._calculate_impact(
             current_value, good_threshold, max_val, importance
         )
 
         return Recommendation(
-            feat_name=feat_name,
+            feat_name=self.feature_configs[feat_name].ukrainian_name,
             current_value=int(current_value),
             target_value=int(good_threshold),
             importance=float(importance),
@@ -143,14 +187,14 @@ class FeatureRecommender:
             message=message,
         )
 
-    def analyze_features(self, user_data: Dict[str, float]) -> List[Recommendation]:
+    def analyze_features(self, user_data: Dict[str, float]) -> List[Recommendation] | NotNeedImprovement:
         """Analyze user features and return sorted recommendations."""
         recommendations = []
 
         for feat_name, importance in zip(
             self.feature_names, self.model.feature_importances
         ):
-            if feat_name not in self.feature_configs or importance <= 0.0:
+            if feat_name not in self.feature_configs:
                 continue
 
             config = self.feature_configs[feat_name]
@@ -169,4 +213,7 @@ class FeatureRecommender:
             if recommendation:
                 recommendations.append(recommendation)
 
+        if not recommendations:
+            return NotNeedImprovement(message="Ваш кредитний рейтинг вже на високому рівні, радимо продовжувати в тому ж дусі!")
+        
         return sorted(recommendations, key=lambda x: abs(x.impact), reverse=True)
