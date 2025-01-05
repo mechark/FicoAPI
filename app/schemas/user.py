@@ -32,7 +32,7 @@ class InputFeatures(UserData):
         super().__init__(**kwargs)
         self.accounts_with_75_percent_limit = int(
             (
-                self.accounts_with_75_percent_limit / self.total_accounts
+                1 - (self.accounts_with_75_percent_limit / self.total_accounts)
                 if self.total_accounts != 0
                 else 1e-6
             )
