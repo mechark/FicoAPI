@@ -29,8 +29,8 @@ def predict_xgb_boost(data: Annotated[user.UserData, Body(), Depends(convert_to_
     prediction = boost.predict([model_input])
 
     # Get the recommendations
-    recommender = FeatureRecommender(data.model_dump().keys())
-    recommendations = recommender.analyze_features(data.model_dump())
+    recommender = FeatureRecommender(input_model.model_dump().keys())
+    recommendations = recommender.analyze_features(input_model.model_dump())
 
     return ResponseWithRecommendation(
         prediction=int(prediction[0]), recommendations=recommendations

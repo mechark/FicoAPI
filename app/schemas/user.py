@@ -28,6 +28,17 @@ class UserData(BaseModel):
 
 
 class InputFeatures(UserData):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.accounts_with_75_percent_limit = int(
+            (
+                self.accounts_with_75_percent_limit / self.total_accounts
+                if self.total_accounts != 0
+                else 1e-6
+            )
+            * 100
+        )
+
     @computed_field
     @property
     def bc_open_to_buy(self) -> int:

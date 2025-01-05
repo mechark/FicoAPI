@@ -60,12 +60,12 @@ class FeatureRecommender:
                 status=FeatureStatus(is_negative=True, can_improve=True),
             ),
             "number_of_derogatory_records": FeatureConfig(
-                threshold=(0.20, 86.0),
+                threshold=(0, 86.0),
                 ukrainian_name="Кількість негативних записів",
                 explanation="Негативні записи значно знижують кредитний рейтинг. Уникайте нових порушень та працюйте над погашенням існуючих заборгованостей",
             ),
             "credits_overdue_120_days": FeatureConfig(
-                threshold=(0.48, 58.0),
+                threshold=(0, 58.0),
                 ukrainian_name="Прострочення понад 120 днів",
                 explanation="Тривалі прострочення серйозно впливають на кредитний рейтинг. Зверніться до кредиторів для розробки плану реструктуризації боргу",
                 status=FeatureStatus(is_negative=True, can_improve=False),
@@ -87,7 +87,7 @@ class FeatureRecommender:
             ),
             "total_income": FeatureConfig(
                 threshold=(77992.42, 110000000.0),
-                ukrainian_name="Сумарний дохід",
+                ukrainian_name="Сукупний місячний дохід",
                 explanation="Вищий дохід покращує співвідношення боргу до доходу. Розгляньте можливості додаткового заробітку або підвищення кваліфікації",
             ),
             "mo_sin_rcnt_rev_tl_op": FeatureConfig(
@@ -99,6 +99,12 @@ class FeatureRecommender:
                 threshold=(1.0, 1.0),
                 ukrainian_name="Власність на житло",
                 explanation="Наявність житла позитивно впливає на рейтинг. Розгляньте можливість придбання житла або оформлення іпотеки при стабільному доході",
+            ),
+            "number_of_collections": FeatureConfig(
+                threshold=(0, 1000),
+                ukrainian_name="Кількість боргів у колекторів",
+                status=FeatureStatus(is_negative=True, can_improve=True),
+                explanation="Борги, передані колекторам, негативно впливають на кредитний рейтинг. Спробуйте домовитися з кредиторами про реструктуризацію боргу або розгляньте можливість консультування з фінансовим експертом для вирішення проблеми",
             ),
         }
 
@@ -112,7 +118,9 @@ class FeatureRecommender:
         """Calculate the impact score for a feature."""
         return ((good_threshold - current_value) / max_val) * importance
 
-    def _create_message(self, config: FeatureConfig, feat_name: str) -> str:
+    def _create_message(
+        self, config: FeatureConfig, feat_name: str, current_val: int
+    ) -> str:
         if not config.status.can_improve:
             message = (
                 "На жаль, цей показник вже не вдасться покращити. " + config.explanation
@@ -136,6 +144,7 @@ class FeatureRecommender:
         config: FeatureConfig,
     ) -> Optional[Recommendation]:
         """Create a recommendation if the feature needs improvement."""
+
         needs_improvement = (
             (current_value > good_threshold)
             if config.status.is_negative
@@ -146,7 +155,7 @@ class FeatureRecommender:
             return None
 
         if importance > 0.05:
-            message = self._create_message(config, feat_name)
+            message = self._create_message(config, feat_name, current_value)
 
             impact = self._calculate_impact(
                 current_value, good_threshold, max_val, importance
