@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import Dict, Any
 
+
 class UserData(BaseModel):
     total_credit_limit: float = Field(..., ge=0)
     used_credit_amount: float = Field(..., ge=0)
@@ -47,7 +48,9 @@ class InputFeatures(UserData):
     @computed_field
     @property
     def pct_tl_nvr_dlq(self) -> int:
-        accounts_without_late_payments = self.total_accounts - self.accounts_with_late_payments
+        accounts_without_late_payments = (
+            self.total_accounts - self.accounts_with_late_payments
+        )
         return int(accounts_without_late_payments / self.total_accounts) * 100
 
     @computed_field
@@ -91,11 +94,15 @@ class InputFeatures(UserData):
     @property
     def avg_cur_bal(self) -> int:
         return int(self.total_card_balance / self.total_accounts)
-    
+
     @computed_field
     @property
     def dti(self) -> int:
-        return int(self.monthly_debt_payments / self.total_income if self.total_income != 0 else 1e-6 * 100)
+        return int(
+            self.monthly_debt_payments / self.total_income
+            if self.total_income != 0
+            else 1e-6 * 100
+        )
 
     model_config = ConfigDict(
         populate_by_name=True,

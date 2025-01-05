@@ -9,8 +9,10 @@ class Recommendation(BaseModel):
     impact: float
     message: str
 
+
 class NotNeedImprovement(BaseModel):
     message: str
+
 
 class ResponseWithRecommendation(BaseModel):
     prediction: float
