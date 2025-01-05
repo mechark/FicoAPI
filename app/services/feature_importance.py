@@ -118,9 +118,7 @@ class FeatureRecommender:
         """Calculate the impact score for a feature."""
         return ((good_threshold - current_value) / max_val) * importance
 
-    def _create_message(
-        self, config: FeatureConfig, feat_name: str, current_val: int
-    ) -> str:
+    def _create_message(self, config: FeatureConfig, feat_name: str) -> str:
         if not config.status.can_improve:
             message = (
                 "На жаль, цей показник вже не вдасться покращити. " + config.explanation
@@ -155,7 +153,7 @@ class FeatureRecommender:
             return None
 
         if importance > 0.05:
-            message = self._create_message(config, feat_name, current_value)
+            message = self._create_message(config, feat_name)
 
             impact = self._calculate_impact(
                 current_value, good_threshold, max_val, importance
